@@ -18,7 +18,7 @@ class DataProcessor:
 	# Read data from csv and convert it to a sequence of digit lists 
 		df=pd.read_csv(datapath)
 		nums=[]
-		print "Generating data... ",n
+		print "Generating data... "
 		for i in xrange(n):
 			c=df.loc[df['FileName'] == str(i)+".png"]["DigitLabel"].tolist()
 			# Alternative approach :
@@ -61,7 +61,6 @@ if __name__ == '__main__':
 	if(not(os.path.isfile("svhn.csv"))):
 		datapath = 'svhn/data/train.csv'
 		nums = dp.read_data(datapath,3)
-		print nums
 		dp.write_to_csv(nums)
 	
 	datapath = 'svhn.csv'
