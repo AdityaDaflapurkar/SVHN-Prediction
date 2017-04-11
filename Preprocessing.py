@@ -41,14 +41,10 @@ class DataProcessing:
 			max_id_x = x_list.index(max_x)
 			max_id_y = y_list.index(max_y)
 
-			# Bottom-right corner coordinates()
+			# Bottom-right corner coordinates(x2,y2)
 			x2 = max_x + dx[max_id_x]
 			y2 = max_y + dy[max_id_y]
 
-			# Alternative approach :
-			# img="'"+str(i)+'.png'+"'"		
-			# c=df.query("FileName == "+img)['DigitLabel']
-			
 			if i%100==0:
 				progress = i*100.0/(n+1)
 				print "%.2f  percent done." % progress
@@ -126,8 +122,8 @@ if __name__ == '__main__':
 	datapath = 'svhn.csv'
 	df=pd.read_csv(datapath)
 	
-	ilist, dlist = dp.k_fold_split(df,images,5)
+	ilist, dlist = dp.k_fold_split(df,images,6)
 	 
-	for i in xrange(len(ilist)):
-		print len(ilist[i]),"image",i
-		print len(dlist[i]),"data",i
+#	for i in xrange(len(ilist)):
+#		print len(ilist[i]),"image",i
+#		print len(dlist[i]),"data",i
