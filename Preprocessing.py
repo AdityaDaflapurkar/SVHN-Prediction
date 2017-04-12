@@ -6,6 +6,8 @@ from skimage.io import imread_collection,imshow
 import csv
 import os.path
 from skimage.transform import resize
+from skimage import img_as_uint
+
 
 class DataProcessing:
 # This file should be located inside the parent directory of the svhn directory("release") where the data is stored.  
@@ -36,6 +38,12 @@ class DataProcessing:
 			# Top-left corner coordinates(x1,y1) 
 			x1 = min(x_list)
 			y1 = min(y_list)
+			
+			# Handling outliers
+			if x1<0:
+				x1=0
+			if y1<0:
+				y1=0
 			
 			max_x = max(x_list)
 			max_y = max(y_list)
@@ -115,7 +123,7 @@ if __name__ == '__main__':
 	
 	dp=DataProcessing()
 	images=dp.get_images("svhn/data/train_images/*.png")
-	if(not(os.path.isfile("svhn.csv"))):
+	if (not(os.path.isfile("svhn.csv"))):
 		datapath = 'svhn/data/train.csv'
 		nums = dp.generate_data(datapath,len(images))
 		dp.write_to_csv(nums)
@@ -124,14 +132,15 @@ if __name__ == '__main__':
 	df=pd.read_csv(datapath)
 	
 	ilist, dlist = dp.k_fold_split(df,images,6)
-	#print "x1:",df.get_value(0,"x1")," x2:",df.get_value(0,"x2")," y1:",df.get_value(0,"y1")," y2:",df.get_value(0,"y2")
-	#print np.shape(images[0])
-	crop=images[0][77:300,246:419,:]
-	#print np.shape(crop)
-	#print crop	
-	#viewer = ImageViewer(images[0])
-	#viewer.show()
-	#viewer2 = ImageViewer(crop_image)
-	reshape=resize(crop, (64,64),mode='constant')
-	imshow(reshape,plugin=None)
-	plt.show()
+
+	if not(os.path.isdir("resized_images")):
+		os.makedirs("resized_images")
+		print "Processing images..."
+		for i in xrange(len(images)):
+			print i+1			
+			crop=images[i][ df.get_value(i,"y1"):df.get_value(i,"y2"),df.get_value(i,"x1"):df.get_value(i,"x2"),:]
+				
+			resized_image=resize(crop, (32,32),mode='reflect')
+			plt.imsave('resized_images/'+str(i+1)+'.png', resized_image)
+			
+		print "Done."
