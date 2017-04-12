@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
-from skimage.io import imread_collection
+from skimage.io import imread_collection,imshow
 import csv
 import os.path
+from skimage.transform import resize
 
 class DataProcessing:
 # This file should be located inside the parent directory of the svhn directory("release") where the data is stored.  
@@ -123,7 +124,14 @@ if __name__ == '__main__':
 	df=pd.read_csv(datapath)
 	
 	ilist, dlist = dp.k_fold_split(df,images,6)
-	 
-#	for i in xrange(len(ilist)):
-#		print len(ilist[i]),"image",i
-#		print len(dlist[i]),"data",i
+	#print "x1:",df.get_value(0,"x1")," x2:",df.get_value(0,"x2")," y1:",df.get_value(0,"y1")," y2:",df.get_value(0,"y2")
+	#print np.shape(images[0])
+	crop=images[0][77:300,246:419,:]
+	#print np.shape(crop)
+	#print crop	
+	#viewer = ImageViewer(images[0])
+	#viewer.show()
+	#viewer2 = ImageViewer(crop_image)
+	reshape=resize(crop, (64,64),mode='constant')
+	imshow(reshape,plugin=None)
+	plt.show()
