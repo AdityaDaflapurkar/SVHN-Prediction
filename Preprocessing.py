@@ -76,7 +76,7 @@ class DataProcessing:
 		record.append(y2)
 		record.append(len(digits))
 		record = record + digits
-		padding = [-1]*(11-len(record))
+		padding = [10]*(11-len(record))
 		record = record + padding
 		
 		return record
@@ -130,7 +130,6 @@ if __name__ == '__main__':
 	
 	datapath = 'svhn.csv'
 	df=pd.read_csv(datapath)
-	
 	ilist, dlist = dp.k_fold_split(df,images,6)
 
 	if not(os.path.isdir("resized_images")):
