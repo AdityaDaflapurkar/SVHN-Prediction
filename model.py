@@ -51,6 +51,7 @@ def max_pool_2x2(x):
 	return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
 
 def accuracy(predictions, labels):
+	print labels
 	return (100.0 * np.sum(np.argmax(predictions, 2).T == labels) / predictions.shape[1] / predictions.shape[0])
 
 def output_size_pool(input_size, conv_filter_size, pool_filter_size,padding, conv_stride, pool_stride):
@@ -109,7 +110,7 @@ with graph.as_default():
   # Input data.
 	tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size, num_channels))
 	tf_train_labels = tf.placeholder(tf.int32, shape=(batch_size, 6))
-	#tf_valid_dataset = tf.constant(valid_dataset)
+	tf_valid_dataset = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size, num_channels))
 	#tf_test_dataset = tf.constant(test_dataset)
 
 
@@ -188,13 +189,13 @@ with graph.as_default():
 	                      tf.nn.softmax(model(tf_train_dataset, 1.0, shape)[2]),\
 	                      tf.nn.softmax(model(tf_train_dataset, 1.0, shape)[3]),\
 	                      tf.nn.softmax(model(tf_train_dataset, 1.0, shape)[4])])
-	'''
+	
 	valid_prediction = tf.stack([tf.nn.softmax(model(tf_valid_dataset, 1.0, shape)[0]),\
 	                      tf.nn.softmax(model(tf_valid_dataset, 1.0, shape)[1]),\
 	                      tf.nn.softmax(model(tf_valid_dataset, 1.0, shape)[2]),\
 	                      tf.nn.softmax(model(tf_valid_dataset, 1.0, shape)[3]),\
 	 	                  tf.nn.softmax(model(tf_valid_dataset, 1.0, shape)[4])])
-	'''
+	
 	'''	
 	test_prediction = tf.stack([tf.nn.softmax(model(tf_test_dataset, 1.0, shape)[0]),\
 	                     tf.nn.softmax(model(tf_test_dataset, 1.0, shape)[1]),\
@@ -206,17 +207,14 @@ with graph.as_default():
 #saver = tf.train.Saver()
 
 
-num_steps = 15000
+
 with tf.Session(graph=graph) as session:
 	tf.initialize_all_variables().run()
 
-	"to be used after first iteration"
-  #saver.restore(session, "CNN_multi.ckpt")
-  #print("Model restored.")
-
+	num_steps = 15000
 	print('Initialized')
 	
-	for i in xrange(3000):
+	for i in xrange(5):
        	  for step in range(num_steps):
 		#offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
 		#print (train_dataset[step])
@@ -231,10 +229,32 @@ with tf.Session(graph=graph) as session:
 		feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
 		_, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
 		
-		if step==1:
-			print(i,' : Minibatch loss at step %d: %f' % (step, l))
-			print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels[:,1:6]))
-		#print('Validation accuracy: %.1f%%' % accuracy(valid_prediction.eval(), valid_labels[:,1:6]))
+		
+		print(i,' : Minibatch loss at step %d: %f' % (step, l))
+		print np.argmax(predictions,2).T
+		print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels[:,1:6]))
+	
+	print "Validation:"
+	
+       	for step in xrange(10):
+		
+		crop=valid_dataset[step][ df.get_value(step,"y1"):df.get_value(step,"y2"),df.get_value(step,"x1"):df.get_value(step,"x2"),:]
+		resized_image=resize(crop, (32,32),mode='reflect')
+		rs=[]
+		rs.append(resized_image)
+		batch_data = rs
+		batch_labels = np.reshape(valid_labels.as_matrix()[step],(1,len(valid_labels.as_matrix()[step])))
+		
+		feed_dict = {tf_valid_dataset : batch_data}
+		predictions = session.run([valid_prediction], feed_dict=feed_dict)
+		
+		p=np.reshape(predictions,[5,1,11])
+		print "v.p.",np.argmax(p,2).T
+		print "v.p.",batch_labels[:,1:]
+		#print(i,' : Minibatch loss at step %d: %f' % (step, l))
+		#print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels[:,1:6]))
+	
+	#print('Validation accuracy: %.1f%%' % accuracy(valid_prediction.eval(), valid_labels[:,1:6]))
 	#print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels[:,1:6]))
 	#save_path = saver.save(session, "CNN_multi.ckpt")
 	#print("Model saved in file: %s" % save_path)
