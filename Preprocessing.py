@@ -34,6 +34,7 @@ class DataProcessing:
 			
 			# Digits list
 			digits = current_df["DigitLabel"].tolist()
+			digits = np.mod(digits,10).tolist()
 			
 			# Top-left corner coordinates(x1,y1) 
 			x1 = min(x_list)
