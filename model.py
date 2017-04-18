@@ -1,8 +1,9 @@
 import numpy as np
 import tensorflow as tf
-from skimage.io import imread_collection
+from skimage.io import imread_collection,imshow
 from skimage.transform import resize
 import pandas as pd
+import matplotlib.pyplot as plt
 
 df=pd.read_csv("svhn.csv")
 print "Collecting images..."	
@@ -21,8 +22,8 @@ for i in xrange(len(images)):
 
 # with open(pickle_file, 'rb') as f:
 #   save = pickle.load(f)
-train_dataset = imgset[:15000]
-train_labels = df.ix[:14999,4:10]
+train_dataset = imgset
+train_labels = df.ix[:,4:10]
 print len(train_dataset),"aaa ",len(train_labels)
 valid_dataset = imgset[15000:]
 valid_labels = df.ix[15000:,4:10]
@@ -176,7 +177,8 @@ with graph.as_default():
 	tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits3, labels=tf_train_labels[:,3])) +\
 	tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits4, labels=tf_train_labels[:,4])) +\
 	tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits5, labels=tf_train_labels[:,5]))
-
+	tf.summary.scalar('loss', loss)
+	merged = tf.summary.merge_all()
 
 	#Optimizer
 	global_step = tf.Variable(0)
@@ -211,48 +213,63 @@ with graph.as_default():
 with tf.Session(graph=graph) as session:
 	tf.initialize_all_variables().run()
 
-	num_steps = 15000
+	summary_writer = tf.summary.FileWriter("/home/aditya/Downloads/House_number_prediction/logs", graph=tf.get_default_graph())
+
+	num_steps = 27835
 	print('Initialized')
 	
-	for i in xrange(5):
+	for i in xrange(1):#150
        	  for step in range(num_steps):
 		#offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
 		#print (train_dataset[step])
 		
 		crop=train_dataset[step][ df.get_value(step,"y1"):df.get_value(step,"y2"),df.get_value(step,"x1"):df.get_value(step,"x2"),:]
 		resized_image=resize(crop, (32,32),mode='reflect')
+		
 		rs=[]
 		rs.append(resized_image)
 		batch_data = rs
 		batch_labels = np.reshape(train_labels.ix[step],(1,len(train_labels.ix[step])))
 		
 		feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
-		_, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
+		_, l, predictions, summary = session.run([optimizer, loss, train_prediction, merged], feed_dict=feed_dict)
 		
-		
-		print(i,' : Minibatch loss at step %d: %f' % (step, l))
-		print np.argmax(predictions,2).T
-		print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels[:,1:6]))
+
+		if step%1000==0:
+			print(i,' : Minibatch loss at step %d: %f' % (step, l))
+			print np.argmax(predictions,2).T
+			print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels[:,1:6]))
+			summary_writer.add_summary(summary, step)
 	
 	print "Validation:"
 	
-       	for step in xrange(10):
+	for step in range(0,1):#(27835,28000):
 		
-		crop=valid_dataset[step][ df.get_value(step,"y1"):df.get_value(step,"y2"),df.get_value(step,"x1"):df.get_value(step,"x2"),:]
+		crop=train_dataset[step][ df.get_value(step,"y1"):df.get_value(step,"y2"),df.get_value(step,"x1"):df.get_value(step,"x2"),:]
 		resized_image=resize(crop, (32,32),mode='reflect')
+		#print crop
+		imshow(crop)
+		plt.show()
 		rs=[]
 		rs.append(resized_image)
 		batch_data = rs
-		batch_labels = np.reshape(valid_labels.as_matrix()[step],(1,len(valid_labels.as_matrix()[step])))
+		batch_labels = np.reshape(train_labels.as_matrix()[step],(1,len(train_labels.as_matrix()[step])))
 		
-		feed_dict = {tf_valid_dataset : batch_data}
-		predictions = session.run([valid_prediction], feed_dict=feed_dict)
+		feed_dict = {tf_train_dataset : batch_data}
+		predictions = session.run([train_prediction,], feed_dict=feed_dict)
 		
 		p=np.reshape(predictions,[5,1,11])
 		print "v.p.",np.argmax(p,2).T
 		print "v.p.",batch_labels[:,1:]
 		#print(i,' : Minibatch loss at step %d: %f' % (step, l))
 		#print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels[:,1:6]))
+		
+	
+
+	saver = tf.train.Saver()
+	save_path = saver.save(session, "/home/aditya/Downloads/House_number_prediction/models/model.ckpt")
+   	print("Saved to path: ", save_path)
+       	
 	
 	#print('Validation accuracy: %.1f%%' % accuracy(valid_prediction.eval(), valid_labels[:,1:6]))
 	#print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels[:,1:6]))
